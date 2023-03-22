@@ -79,6 +79,7 @@ namespace MyOSToolsV2
             this.label11 = new System.Windows.Forms.Label();
             this.label10 = new System.Windows.Forms.Label();
             this.button1 = new System.Windows.Forms.Button();
+            this.synchro = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -217,7 +218,7 @@ namespace MyOSToolsV2
             // OSVersion
             // 
             this.OSVersion.AutoSize = true;
-            this.OSVersion.Location = new System.Drawing.Point(58, 252);
+            this.OSVersion.Location = new System.Drawing.Point(58, 254);
             this.OSVersion.Margin = new System.Windows.Forms.Padding(6, 0, 6, 0);
             this.OSVersion.Name = "OSVersion";
             this.OSVersion.Size = new System.Drawing.Size(131, 26);
@@ -261,9 +262,9 @@ namespace MyOSToolsV2
             this.SerialNumber.Location = new System.Drawing.Point(50, 604);
             this.SerialNumber.Margin = new System.Windows.Forms.Padding(6, 0, 6, 0);
             this.SerialNumber.Name = "SerialNumber";
-            this.SerialNumber.Size = new System.Drawing.Size(177, 26);
+            this.SerialNumber.Size = new System.Drawing.Size(179, 26);
             this.SerialNumber.TabIndex = 17;
-            this.SerialNumber.Text = "Numéro de serie :";
+            this.SerialNumber.Text = "Numéro de Serie :";
             // 
             // Proc
             // 
@@ -281,19 +282,19 @@ namespace MyOSToolsV2
             this.label1.Location = new System.Drawing.Point(50, 724);
             this.label1.Margin = new System.Windows.Forms.Padding(6, 0, 6, 0);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(191, 26);
+            this.label1.Size = new System.Drawing.Size(202, 26);
             this.label1.TabIndex = 19;
-            this.label1.Text = "Mémoir RAM (Go) :";
+            this.label1.Text = "Mémoire RAM (Go) :";
             // 
             // antivirus
             // 
             this.antivirus.AutoSize = true;
-            this.antivirus.Location = new System.Drawing.Point(58, 312);
+            this.antivirus.Location = new System.Drawing.Point(58, 314);
             this.antivirus.Margin = new System.Windows.Forms.Padding(6, 0, 6, 0);
             this.antivirus.Name = "antivirus";
-            this.antivirus.Size = new System.Drawing.Size(188, 26);
+            this.antivirus.Size = new System.Drawing.Size(181, 26);
             this.antivirus.TabIndex = 20;
-            this.antivirus.Text = "Antivirus installer : ";
+            this.antivirus.Text = "Antivirus installé : ";
             // 
             // txtOS
             // 
@@ -314,6 +315,7 @@ namespace MyOSToolsV2
             this.txtInstallDate.ReadOnly = true;
             this.txtInstallDate.Size = new System.Drawing.Size(196, 34);
             this.txtInstallDate.TabIndex = 22;
+            this.txtInstallDate.TextChanged += new System.EventHandler(this.txtInstallDate_TextChanged);
             // 
             // Tab3
             // 
@@ -349,7 +351,7 @@ namespace MyOSToolsV2
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(58, 362);
+            this.label3.Location = new System.Drawing.Point(58, 361);
             this.label3.Margin = new System.Windows.Forms.Padding(6, 0, 6, 0);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(136, 26);
@@ -468,6 +470,7 @@ namespace MyOSToolsV2
             // 
             // enregistrement
             // 
+            this.enregistrement.Enabled = false;
             this.enregistrement.Location = new System.Drawing.Point(302, 812);
             this.enregistrement.Margin = new System.Windows.Forms.Padding(6);
             this.enregistrement.Name = "enregistrement";
@@ -580,14 +583,25 @@ namespace MyOSToolsV2
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(512, 356);
+            this.button1.Location = new System.Drawing.Point(510, 353);
             this.button1.Margin = new System.Windows.Forms.Padding(6);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(272, 44);
+            this.button1.Size = new System.Drawing.Size(166, 42);
             this.button1.TabIndex = 40;
-            this.button1.Text = "Installer TeamViewer";
+            this.button1.Text = "Télécharger";
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
+            // 
+            // synchro
+            // 
+            this.synchro.Enabled = false;
+            this.synchro.Location = new System.Drawing.Point(542, 812);
+            this.synchro.Name = "synchro";
+            this.synchro.Size = new System.Drawing.Size(196, 44);
+            this.synchro.TabIndex = 41;
+            this.synchro.Text = "Synchro";
+            this.synchro.UseVisualStyleBackColor = true;
+            this.synchro.Click += new System.EventHandler(this.button2_Click);
             // 
             // myostool
             // 
@@ -596,6 +610,7 @@ namespace MyOSToolsV2
             this.AutoSize = true;
             this.BackColor = System.Drawing.SystemColors.ControlLightLight;
             this.ClientSize = new System.Drawing.Size(1426, 892);
+            this.Controls.Add(this.synchro);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.enregistrement);
@@ -676,7 +691,7 @@ namespace MyOSToolsV2
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label antivirus;
         public System.Windows.Forms.TextBox txtOS;
-        private System.Windows.Forms.TextBox txtInstallDate;
+        public System.Windows.Forms.TextBox txtInstallDate;
         private System.Windows.Forms.Label Tab3;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.TextBox txtTeamViewer;
@@ -703,6 +718,7 @@ namespace MyOSToolsV2
         private System.Windows.Forms.Label label11;
         private System.Windows.Forms.Label label10;
         private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button synchro;
     }
 }
 

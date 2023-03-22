@@ -74,6 +74,10 @@ namespace MyOSToolsV2
             // Récupération des informations sur l'antivirus installé
             string antivirus = GetAntivirusInfo();
 
+            // Récupération du type d'ordinateur
+            string computertype = GetComputerType();
+            
+
             // Récupération des informations réseaux
             string ipwifi = GetIPAndDHCPStatus("IPW");
             string ipethernet = GetIPAndDHCPStatus("IPE");
@@ -105,10 +109,12 @@ namespace MyOSToolsV2
             txtMemory.Text = virtualmemory;
             txtLastReboot.Text = uptimeString;
 
+            synchro.Enabled = true;
+            enregistrement.Enabled = true;
         }
 
         // Fonction pour récupérer les informations sur l'ordinateur
-        static string GetHardwareInfo(string hardwareInfo)
+        public static string GetHardwareInfo(string hardwareInfo)
         {
             string info = string.Empty;
 
@@ -143,6 +149,39 @@ namespace MyOSToolsV2
             }
 
             return info;
+        }
+
+        // Fonction pour recupere uniquement le nom du systeme :
+        public static string GetOperatingSystemName()
+        {
+            string operatingSystem = string.Empty;
+
+            try
+            {
+                // Récupération des informations système
+                ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT * FROM Win32_OperatingSystem");
+
+                foreach (ManagementObject mo in searcher.Get())
+                {
+                    operatingSystem = mo["Caption"].ToString();
+                    break;
+                }
+
+                if (operatingSystem.Contains("Microsoft Windows 11 Professionnel"))
+                {
+                    operatingSystem = "Windows 11 Pro";
+                }
+                else if (operatingSystem.Contains("Microsoft Windows 10 Professionnel"))
+                {
+                    operatingSystem = "Windows 10 Pro";
+                }
+            }
+            catch (ManagementException e)
+            {
+                Console.WriteLine("Erreur lors de la récupération des informations sur le système d'exploitation : " + e.Message);
+            }
+
+            return operatingSystem;
         }
 
         // Fonction pour récupérer les informations sur le système d'exploitation
@@ -196,8 +235,20 @@ namespace MyOSToolsV2
             return info;
         }
 
+        // fonction public pour la date d'installation du SE
+        public string GetinstallDate()
+        {
+            return GetOperatingSystemInfo("InstallDate");
+        }
+
+        // ajout des 36 mois pour la date fin garantie.
+        public DateTime CalculateEndOfWarrantyDate(DateTime installDate)
+        {
+            return installDate.AddMonths(36);
+        }
+
         // Fonction pour récupérer les informations sur l'antivirus installé
-        static string GetAntivirusInfo()
+        public static string GetAntivirusInfo()
         {
             string info = string.Empty;
 
@@ -208,11 +259,26 @@ namespace MyOSToolsV2
                 ManagementObjectSearcher searcher = new ManagementObjectSearcher("root\\SecurityCenter2", query);
 
                 // Exécution de la requête
-                foreach (ManagementObject mo in searcher.Get())
+                ManagementObjectCollection antivirusProducts = searcher.Get();
+
+                // Stocker les noms des antivirus dans un tableau
+                string[] antivirusNames = new string[antivirusProducts.Count];
+                int count = 0;
+                foreach (ManagementObject mo in antivirusProducts)
                 {
-                    // Récupération du nom de l'antivirus
-                    info = mo["displayName"].ToString();
-                    break;
+                    antivirusNames[count] = mo["displayName"].ToString();
+                    count++;
+                }
+
+                // Si il y a 2 valeurs dans le tableau, afficher la 2ème valeur
+                // Sinon, afficher la première valeur
+                if (antivirusNames.Length > 1)
+                {
+                    info = antivirusNames[1];
+                }
+                else
+                {
+                    info = antivirusNames[0];
                 }
             }
             catch (ManagementException e)
@@ -223,8 +289,39 @@ namespace MyOSToolsV2
             return info;
         }
 
+        //Fonction pour recuperer le typ d'ordinateur
+        public static string GetComputerType()
+        {
+            string computerType = "Laptop";
+
+            try
+            {
+                // Création de la requête WMI
+                string query = "SELECT * FROM Win32_DesktopMonitor";
+                ManagementObjectSearcher searcher = new ManagementObjectSearcher(query);
+
+                // Exécution de la requête
+                int count = 0;
+                foreach (ManagementObject mo in searcher.Get())
+                {
+                    count++;
+                }
+
+                if (count > 1)
+                {
+                    computerType = "Desktop";
+                }
+            }
+            catch (ManagementException e)
+            {
+                Console.WriteLine("Erreur lors de la récupération du type d'ordinateur : " + e.Message);
+            }
+
+            return computerType;
+        }
+
         //Fonction pour récupérer le numéro de série
-        static string GetBiosInfo()
+        public static string GetBiosInfo()
         {
             string info = string.Empty;
 
@@ -244,7 +341,7 @@ namespace MyOSToolsV2
             }
             catch (ManagementException e)
             {
-                Console.WriteLine("Erreur lors de la récupération des informations sur l'antivirus : " + e.Message);
+                Console.WriteLine("Erreur lors de la récupération du bios : " + e.Message);
             }
 
             return info;
@@ -252,7 +349,7 @@ namespace MyOSToolsV2
 
 
         //Fonction pour récupérer le Processeur
-        static string GetProcInfo()
+        public static string GetProcInfo()
         {
             string info = string.Empty;
 
@@ -282,32 +379,67 @@ namespace MyOSToolsV2
         public static string GetTeamViewerID()
         {
             string teamViewerID = "";
-            string[] keyPaths = {
-        @"SOFTWARE\WOW6432Node\TeamViewer",
-        @"SOFTWARE\TeamViewer",
-        @"SOFTWARE\TeamViewer\Version7"
+
+            // Check if the ID exists in the rolloutfile.tv13 file
+            string[] filePaths = {
+        @"C:\Program Files (x86)\TeamViewer\rolloutfile.tv13",
+        @"C:\Program Files\TeamViewer\rolloutfile.tv13"
     };
 
-            foreach (string keyPath in keyPaths)
+            foreach (string filePath in filePaths)
             {
-                try
+                if (File.Exists(filePath))
                 {
-                    RegistryKey key = Registry.LocalMachine.OpenSubKey(keyPath);
-                    if (key != null)
+                    try
                     {
-                        teamViewerID = key.GetValue("ClientID").ToString();
-                        key.Close();
-                        break; // On arrête de chercher dès qu'on a trouvé la clé
+                        string fileContent = File.ReadAllText(filePath);
+                        int firstCommaIndex = fileContent.IndexOf(',');
+                        if (firstCommaIndex >= 0)
+                        {
+                            teamViewerID = fileContent.Substring(0, firstCommaIndex);
+                            break; // Stop looking for the ID as soon as it is found
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("Error de récuperation: " + ex.Message);
+                        return ("TeamViewer non identifié");
+
                     }
                 }
-                catch (Exception ex)
+            }
+
+            // If the ID was not found in the file, look for it in the registry
+            if (string.IsNullOrEmpty(teamViewerID))
+            {
+                string[] keyPaths = {
+            @"SOFTWARE\WOW6432Node\TeamViewer",
+            @"SOFTWARE\TeamViewer",
+            @"SOFTWARE\TeamViewer\Version7"
+        };
+
+                foreach (string keyPath in keyPaths)
                 {
-                    return ("TeamViewer non détecter");
+                    try
+                    {
+                        RegistryKey key = Registry.LocalMachine.OpenSubKey(keyPath);
+                        if (key != null)
+                        {
+                            teamViewerID = key.GetValue("ClientID").ToString();
+                            key.Close();
+                            break; // Stop looking for the ID as soon as it is found
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        return ("TeamViewer not detected: " + ex.Message);
+                    }
                 }
             }
 
             return teamViewerID;
         }
+
 
         //Fonction de récuperation IP et DHCP
         public string GetIPAndDHCPStatus(string type)
@@ -365,7 +497,7 @@ namespace MyOSToolsV2
         }
 
         //Fonction de récuperation de l'espace disque
-        public string GetTotalDiskCapacity(string StorageCapacity)
+        public static string GetTotalDiskCapacity(string StorageCapacity)
         {
             if (StorageCapacity == "TotalCapacity")
             {
@@ -404,7 +536,7 @@ namespace MyOSToolsV2
         }
 
         //Fonction de récuperation de la mémoir vive
-        public string GetTotalMemory()
+        public static string GetTotalMemory()
         {
             // Définir une requête WMI pour obtenir des informations sur la mémoire vive
             string query = "SELECT Capacity FROM Win32_PhysicalMemory";
@@ -426,6 +558,9 @@ namespace MyOSToolsV2
             // Retourner la quantité de mémoire en Go sous forme de chaîne de caractères
             return memoryInGB.ToString();
         }
+
+        //Fonction utilisateur
+
 
         //Fonction de récuperation du derniere reboot
         static string GetUptimeString()
@@ -470,6 +605,17 @@ namespace MyOSToolsV2
         //Boutton d'enregistrement
         private void enregistrement_Click(object sender, EventArgs e)
         {
+            string computertype = myostool.GetComputerType();
+            string nomFamille = "";
+            if (computertype == "Laptop")
+            {
+                nomFamille = "ORDINATEUR PORTABLE";
+            }
+            else if (computertype == "Desktop")
+            {
+                nomFamille = "ORDINATEUR FIXE";
+
+            }
             // Création d'une nouvelle application Excel
             ExcelApplication excelApp = new ExcelApplication();
 
@@ -479,14 +625,51 @@ namespace MyOSToolsV2
             // Sélection de la première feuille du classeur
             Worksheet worksheet = workbook.Worksheets[1];
 
-            // Récupération des valeurs des textbox
-            FormsTextBox[] textboxes = { txtSerialNumber, txtManufacturer, txtName, txtModel, txtOsVersion,
-            txtProcessor, txtMemory, txtAntivirus, txtOS, txtTeamViewer, txtIPW, txtIPE, txtDHCP };
+            // tableau du modele
+            worksheet.Cells[1, 1] = "CODE-CLIENT";
+            worksheet.Cells[1, 2] = "NOM-CLIENT";
+            worksheet.Cells[1, 3] = "NUM-SERIE";
+            worksheet.Cells[1, 4] = "MARQUE";
+            worksheet.Cells[1, 5] = "MODELE";
+            worksheet.Cells[1, 6] = "FAMILLE-PRODUIT";
+            worksheet.Cells[1, 7] = "ETAT-DE-GARANTIE_MAINTENANCE-LOGICIELLE";
+            worksheet.Cells[1, 8] = "COUVERTURE-INFOGERANCE";
+            worksheet.Cells[1, 9] = "COUVERTURE-ANTIVIRALE";
+            worksheet.Cells[1, 10] = "SYSTEME-EXPLOITATION";
+            worksheet.Cells[1, 11] = "ETAT-DE-PRESENCE";
+            worksheet.Cells[1, 12] = "LOCATION";
+            worksheet.Cells[1, 13] = "UTILISATEUR-ASSOCIE";
+            worksheet.Cells[1, 14] = "SITUATION-GEOGRAPHIQUE";
+            worksheet.Cells[1, 15] = "ID-TV";
+            worksheet.Cells[1, 16] = "COMMENTAIRE";
+            worksheet.Cells[1, 17] = "DATE-FACTURE";
+            worksheet.Cells[1, 18] = "DUREE-GARANTIE";
+            worksheet.Cells[1, 19] = "DATE-FIN-GTIE";
+            worksheet.Cells[1, 20] = "PROC";
+            worksheet.Cells[1, 21] = "RAM";
+            worksheet.Cells[1, 22] = "DISQUE";
+            worksheet.Cells[1, 23] = "IP";
+            worksheet.Cells[1, 24] = "NOM-NETBIOS";
 
-            // Ajout des valeurs des textbox dans la première ligne de la feuille
-            for (int i = 0; i < textboxes.Length; i++)
+            // Variables pour stocker les valeurs des textboxes
+            string serialNumber = txtSerialNumber.Text;
+            string manufacturer = txtManufacturer.Text;
+            string model = txtModel.Text;
+            string os = txtOS.Text;
+            string antivirus = txtAntivirus.Text;
+            string teamViewer = txtTeamViewer.Text;
+            string processor = txtProcessor.Text;
+            string memory = txtMemory.Text;
+            string storage = txtStorage.Text;
+            string userAssocie = Environment.UserName;
+
+            // Liste pour stocker les valeurs dans l'ordre spécifié
+            List<string> values = new List<string> { "CLXXXXX", "MON CLIENT", serialNumber, manufacturer, model, nomFamille, null, null, antivirus, os, "1", null, userAssocie, null, teamViewer, null, null, null, null, processor, memory, storage };
+
+            // Ajout des valeurs des textbox dans la 2ième ligne de la feuille
+            for (int i = 0; i < values.Count; i++)
             {
-                worksheet.Cells[1, i + 1] = textboxes[i].Text;
+                worksheet.Cells[2, i + 1] = values[i];
             }
 
             // Demande à l'utilisateur où enregistrer le fichier Excel
@@ -517,28 +700,22 @@ namespace MyOSToolsV2
 
         }
 
-        private async void button1_Click(object sender, EventArgs e)
+        private void button1_Click(object sender, EventArgs e)
         {
             // Téléchargement de l'application
-            using (WebClient client = new WebClient())
-            {
-                try
-                {
-                    // Téléchargement du fichier à l'emplacement temporaire
-                    string tempFile = Path.GetTempFileName();
-                    await client.DownloadFileTaskAsync("https://www.one-system.fr/TeamViewer.exe", tempFile);
+            Process.Start("https://www.one-system.fr/TeamViewer.exe");
+        }
 
-                    // Installation de l'application en mode silencieux
-                    ProcessStartInfo startInfo = new ProcessStartInfo();
-                    startInfo.FileName = tempFile;
-                    startInfo.Arguments = "/S"; // Arguments pour l'installation silencieuse
-                    Process.Start(startInfo);
-                }
-                catch (WebException ex)
-                {
-                    // Gestion des erreurs de téléchargement
-                }
-            }
+        private void button2_Click(object sender, EventArgs e)
+        {
+            var LoginForm = new LoginForm();
+            LoginForm.MainForm = this;
+            LoginForm.ShowDialog();
+        }
+
+        public void txtInstallDate_TextChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }
